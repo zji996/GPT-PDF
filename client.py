@@ -10,10 +10,9 @@ import re
 
 def clean_markdown_code_blocks(text):
     """
-    清理markdown文本中的最外层代码块标记
+    清理markdown文本中的代码块标记
     
-    如果整个文本被一个代码块包围（以```开头和结尾），那么移除这些标记
-    但保留内部的代码块
+    处理所有的markdown代码块，保留内部内容
     
     参数:
         text (str): 原始markdown文本
@@ -24,30 +23,17 @@ def clean_markdown_code_blocks(text):
     # 去除首尾空白字符
     text = text.strip()
     
-    # 检查是否整个文本被代码块包围
-    if text.startswith('```'):
-        # 计算开头和结尾的```数量
-        opening_fence_match = re.match(r'^```[a-zA-Z]*\s*\n', text)
-        if opening_fence_match:
-            opening_fence = opening_fence_match.group(0)
-            remaining_text = text[len(opening_fence):]
-            
-            # 查找末尾的```（确保它是最后一个内容）
-            if remaining_text.rstrip().endswith('```'):
-                # 找到最后一个```的位置
-                trimmed_remaining = remaining_text.rstrip()
-                last_fence_pos = trimmed_remaining.rfind('```')
-                
-                # 提取中间的内容（不包括首尾的```）
-                content = trimmed_remaining[:last_fence_pos].rstrip()
-                
-                # 检查提取的内容是否有效，避免错误的提取
-                # 例如，如果文本中只有一对```，那么内容应该非空
-                if content:
-                    return content
+    # 使用正则表达式找到所有的代码块并提取其内容
+    pattern = r'```(?:markdown)?\s*([\s\S]*?)```'
     
-    # 如果不满足条件或者提取失败，返回原始文本
-    return text
+    def replace_code_block(match):
+        # 提取代码块内的内容并返回
+        return match.group(1).strip()
+    
+    # 替换所有符合模式的代码块
+    processed_text = re.sub(pattern, replace_code_block, text)
+    
+    return processed_text
 
 def convert_pdf_to_markdown(pdf_path, server_url="http://localhost:5000/ocr", output_path=None):
     """
@@ -95,13 +81,13 @@ def convert_pdf_to_markdown(pdf_path, server_url="http://localhost:5000/ocr", ou
                 print(f"错误信息: {response.text}")
                 sys.exit(1)
             
-            # 处理响应内容，删除多余的markdown代码块标记
+            # 处理响应内容，删除markdown代码块标记
             original_content = response.text
             content = clean_markdown_code_blocks(original_content)
             
             # 如果内容被处理了，输出信息
             if content != original_content:
-                print("检测到并移除了外层markdown代码块标记")
+                print("检测到并移除了markdown代码块标记")
             
             # 保存Markdown内容
             with open(output_path, 'w', encoding='utf-8') as out_file:

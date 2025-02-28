@@ -22,7 +22,7 @@ def send_to_openai(messages):
         'model': MODEL_NAME,
         'messages': messages,
         'temperature': 0,  # 确保输出一致性
-        'max_tokens': 4096  # 减小 token 数以避免超过限制
+        'max_tokens': 4096
     }
     
     # 检查请求中是否包含图像，这需要特殊处理
