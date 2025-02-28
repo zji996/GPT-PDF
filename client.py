@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import re
+import chardet
 
 def clean_markdown_code_blocks(text):
     """
@@ -81,13 +82,30 @@ def convert_pdf_to_markdown(pdf_path, server_url="http://localhost:5000/ocr", ou
                 print(f"错误信息: {response.text}")
                 sys.exit(1)
             
+            # 检测响应内容的编码
+            response_content = response.content
+            detected = chardet.detect(response_content)
+            print(f"检测到的响应编码: {detected['encoding']}, 置信度: {detected['confidence']}")
+            
+            # 尝试使用检测到的编码解码内容，如果失败则回退到utf-8
+            try:
+                if detected['encoding'] and detected['confidence'] > 0.5:
+                    original_content = response_content.decode(detected['encoding'])
+                else:
+                    original_content = response.text  # 使用默认编码
+            except UnicodeDecodeError:
+                print(f"无法使用检测到的编码({detected['encoding']})解码内容，回退到utf-8")
+                original_content = response.text
+            
             # 处理响应内容，删除markdown代码块标记
-            original_content = response.text
             content = clean_markdown_code_blocks(original_content)
             
             # 如果内容被处理了，输出信息
             if content != original_content:
                 print("检测到并移除了markdown代码块标记")
+            
+            # 确保内容是有效的UTF-8
+            content = content.encode('utf-8', errors='replace').decode('utf-8')
             
             # 保存Markdown内容
             with open(output_path, 'w', encoding='utf-8') as out_file:
