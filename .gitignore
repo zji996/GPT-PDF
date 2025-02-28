@@ -1,0 +1,57 @@
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# Python 虚拟环境
+.venv
+venv/
+ENV/
+env/
+
+# Python 缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 日志文件
+*.log
+logs/
+
+# 本地数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE 相关文件
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# 临时文件
+tmp/
+temp/
+
+# PDF和图像处理临时文件
+*.pdf.tmp
+*.png.tmp
+*.jpg.tmp 

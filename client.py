@@ -1,0 +1,139 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import requests
+import argparse
+import os
+import sys
+import time
+import re
+
+def clean_markdown_code_blocks(text):
+    """
+    清理markdown文本中的最外层代码块标记
+    
+    如果整个文本被一个代码块包围（以```开头和结尾），那么移除这些标记
+    但保留内部的代码块
+    
+    参数:
+        text (str): 原始markdown文本
+        
+    返回:
+        str: 处理后的markdown文本
+    """
+    # 去除首尾空白字符
+    text = text.strip()
+    
+    # 检查是否整个文本被代码块包围
+    if text.startswith('```'):
+        # 计算开头和结尾的```数量
+        opening_fence_match = re.match(r'^```[a-zA-Z]*\s*\n', text)
+        if opening_fence_match:
+            opening_fence = opening_fence_match.group(0)
+            remaining_text = text[len(opening_fence):]
+            
+            # 查找末尾的```（确保它是最后一个内容）
+            if remaining_text.rstrip().endswith('```'):
+                # 找到最后一个```的位置
+                trimmed_remaining = remaining_text.rstrip()
+                last_fence_pos = trimmed_remaining.rfind('```')
+                
+                # 提取中间的内容（不包括首尾的```）
+                content = trimmed_remaining[:last_fence_pos].rstrip()
+                
+                # 检查提取的内容是否有效，避免错误的提取
+                # 例如，如果文本中只有一对```，那么内容应该非空
+                if content:
+                    return content
+    
+    # 如果不满足条件或者提取失败，返回原始文本
+    return text
+
+def convert_pdf_to_markdown(pdf_path, server_url="http://localhost:5000/ocr", output_path=None):
+    """
+    将PDF文件转换为Markdown格式
+    
+    参数:
+        pdf_path (str): PDF文件的路径
+        server_url (str): OCR API的URL
+        output_path (str, optional): 输出文件的路径，默认为PDF文件名加'.md'后缀
+        
+    返回:
+        str: 保存的Markdown文件路径
+    """
+    if not os.path.exists(pdf_path):
+        print(f"错误: 文件 '{pdf_path}' 不存在")
+        sys.exit(1)
+        
+    if not pdf_path.lower().endswith('.pdf'):
+        print(f"错误: 文件 '{pdf_path}' 不是PDF格式")
+        sys.exit(1)
+    
+    # 默认输出文件路径
+    if output_path is None:
+        base_name = os.path.splitext(pdf_path)[0]
+        output_path = f"{base_name}.md"
+    
+    # 打印开始处理信息
+    print(f"正在处理PDF文件: {pdf_path}")
+    print(f"输出将保存至: {output_path}")
+    
+    start_time = time.time()
+    
+    try:
+        # 准备文件上传
+        with open(pdf_path, 'rb') as f:
+            files = {'file': (os.path.basename(pdf_path), f, 'application/pdf')}
+            
+            # 发送请求
+            print("正在发送请求到OCR服务器，这可能需要一些时间...")
+            response = requests.post(server_url, files=files)
+            
+            # 检查响应状态
+            if response.status_code != 200:
+                print(f"错误: 服务器返回状态码 {response.status_code}")
+                print(f"错误信息: {response.text}")
+                sys.exit(1)
+            
+            # 处理响应内容，删除多余的markdown代码块标记
+            original_content = response.text
+            content = clean_markdown_code_blocks(original_content)
+            
+            # 如果内容被处理了，输出信息
+            if content != original_content:
+                print("检测到并移除了外层markdown代码块标记")
+            
+            # 保存Markdown内容
+            with open(output_path, 'w', encoding='utf-8') as out_file:
+                out_file.write(content)
+            
+            end_time = time.time()
+            duration = end_time - start_time
+            
+            print(f"处理完成! 用时: {duration:.2f} 秒")
+            print(f"Markdown文件已保存至: {output_path}")
+            
+            return output_path
+            
+    except requests.exceptions.ConnectionError:
+        print(f"错误: 无法连接到服务器 {server_url}")
+        print("请确保OCR服务器正在运行.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"发生错误: {str(e)}")
+        sys.exit(1)
+
+def main():
+    # 命令行参数解析
+    parser = argparse.ArgumentParser(description='将PDF文件转换为Markdown格式')
+    parser.add_argument('--pdf_path', '-p', default='./test.pdf', help='PDF文件的路径 (默认: ./test.pdf)')
+    parser.add_argument('--url', default='http://localhost:50000/ocr', help='OCR API的URL (默认: http://localhost:50000/ocr)')
+    parser.add_argument('--output', '-o', help='输出文件的路径 (默认: 与PDF同名但后缀为.md)')
+    
+    args = parser.parse_args()
+    
+    # 调用转换函数
+    convert_pdf_to_markdown(args.pdf_path, args.url, args.output)
+
+if __name__ == "__main__":
+    main() 
