@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 import base64
 from PIL import Image
 import io
+import re
 from utils.utils import send_to_openai
 
 # 加载 .env 文件中的环境变量
@@ -22,10 +23,38 @@ OPENAI_ENDPOINT = os.getenv('OPENAI_ENDPOINT', 'https://api.openai.com/v1/chat/c
 MODEL_NAME = os.getenv('MODEL_NAME', 'gpt-4o')
 CONCURRENCY = int(os.getenv('CONCURRENCY', '5'))  # 默认并发数为 5
 DPI = int(os.getenv('DPI', '300'))  # 默认分辨率为 300 DPI
+CLEAN_CODE_BLOCKS = os.getenv('CLEAN_CODE_BLOCKS', 'true').lower() == 'true'  # 默认清理代码块标记
 
 # 读取提示词文件
 with open('prompt.txt', 'r', encoding='utf-8') as f:
     PROMPT = f.read().strip()
+
+def clean_markdown_code_blocks(text):
+    """
+    清理markdown文本中的代码块标记
+    
+    处理所有的markdown代码块，保留内部内容
+    
+    参数:
+        text (str): 原始markdown文本
+        
+    返回:
+        str: 处理后的markdown文本
+    """
+    # 去除首尾空白字符
+    text = text.strip()
+    
+    # 使用正则表达式找到所有的代码块并提取其内容
+    pattern = r'```(?:markdown)?\s*([\s\S]*?)```'
+    
+    def replace_code_block(match):
+        # 提取代码块内的内容并返回
+        return match.group(1).strip()
+    
+    # 替换所有符合模式的代码块
+    processed_text = re.sub(pattern, replace_code_block, text)
+    
+    return processed_text
 
 @app.route('/ocr', methods=['POST'])
 def ocr():
@@ -57,6 +86,11 @@ def ocr():
 
         # 将所有页面结果整合为 Markdown 内容
         md_content = '\n\n'.join(results)
+        
+        # 根据环境变量设置决定是否清理代码块标记
+        if CLEAN_CODE_BLOCKS:
+            md_content = clean_markdown_code_blocks(md_content)
+            
         return md_content, 200, {'Content-Type': 'text/markdown'}
 
 def process_page(page_num, image, prompt):

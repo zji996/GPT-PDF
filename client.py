@@ -6,35 +6,7 @@ import argparse
 import os
 import sys
 import time
-import re
 import chardet
-
-def clean_markdown_code_blocks(text):
-    """
-    清理markdown文本中的代码块标记
-    
-    处理所有的markdown代码块，保留内部内容
-    
-    参数:
-        text (str): 原始markdown文本
-        
-    返回:
-        str: 处理后的markdown文本
-    """
-    # 去除首尾空白字符
-    text = text.strip()
-    
-    # 使用正则表达式找到所有的代码块并提取其内容
-    pattern = r'```(?:markdown)?\s*([\s\S]*?)```'
-    
-    def replace_code_block(match):
-        # 提取代码块内的内容并返回
-        return match.group(1).strip()
-    
-    # 替换所有符合模式的代码块
-    processed_text = re.sub(pattern, replace_code_block, text)
-    
-    return processed_text
 
 def convert_pdf_to_markdown(pdf_path, server_url="http://localhost:5000/ocr", output_path=None):
     """
@@ -90,19 +62,12 @@ def convert_pdf_to_markdown(pdf_path, server_url="http://localhost:5000/ocr", ou
             # 尝试使用检测到的编码解码内容，如果失败则回退到utf-8
             try:
                 if detected['encoding'] and detected['confidence'] > 0.5:
-                    original_content = response_content.decode(detected['encoding'])
+                    content = response_content.decode(detected['encoding'])
                 else:
-                    original_content = response.text  # 使用默认编码
+                    content = response.text  # 使用默认编码
             except UnicodeDecodeError:
                 print(f"无法使用检测到的编码({detected['encoding']})解码内容，回退到utf-8")
-                original_content = response.text
-            
-            # 处理响应内容，删除markdown代码块标记
-            content = clean_markdown_code_blocks(original_content)
-            
-            # 如果内容被处理了，输出信息
-            if content != original_content:
-                print("检测到并移除了markdown代码块标记")
+                content = response.text
             
             # 确保内容是有效的UTF-8
             content = content.encode('utf-8', errors='replace').decode('utf-8')
