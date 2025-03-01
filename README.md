@@ -1,8 +1,8 @@
-# PDF OCR API 文档
+# GPT-PDF OCR API 文档
 
 ## 概述
 
-PDF OCR API 是一个强大的工具，能够使用】视觉模型对 PDF 文件执行 OCR（光学字符识别）任务，并将结果以 Markdown 格式返回。该 API 特别适用于需要从扫描文档、图像化 PDF 或其他不可直接编辑的 PDF 文件中提取文本内容的场景。
+GPT-PDF OCR API 是一个强大的工具，能够使用视觉模型对 PDF 文件执行 OCR（光学字符识别）任务，并将结果以 Markdown 格式返回。该 API 特别适用于需要从扫描文档、图像化 PDF 或其他不可直接编辑的 PDF 文件中提取文本内容的场景。
 
 ## 主要特点
 
@@ -12,6 +12,7 @@ PDF OCR API 是一个强大的工具，能够使用】视觉模型对 PDF 文件
 - 通过并发处理提高处理效率
 - 将结果输出为规范的 Markdown 格式
 - 支持通过环境变量进行灵活配置
+- 支持服务端清理Markdown代码块标记，简化客户端处理
 
 ## API 端点
 
@@ -74,6 +75,29 @@ API 服务通过 `.env` 文件进行配置，支持以下配置项：
 | `MODEL_NAME` | 使用的 OpenAI 模型 | `gpt-4o` |
 | `CONCURRENCY` | 并发处理的页面数 | `5` |
 | `DPI` | PDF 转图像的分辨率 | `300` |
+| `CLEAN_CODE_BLOCKS` | 是否清理markdown代码块标记 | `true` |
+
+## Markdown 处理
+
+服务默认会自动清理 AI 返回内容中的 Markdown 代码块标记，保留内部内容。这个功能可以通过 `.env` 文件中的 `CLEAN_CODE_BLOCKS` 环境变量进行控制：
+
+```
+# 启用清理功能（默认）
+CLEAN_CODE_BLOCKS=true
+
+# 禁用清理功能
+CLEAN_CODE_BLOCKS=false
+```
+
+当设置为 `true` 时，服务器会自动移除类似以下格式的代码块标记：
+
+````
+```markdown
+实际内容
+```
+````
+
+处理后只保留 `实际内容` 部分。这个处理是在服务端完成的，客户端无需额外处理。
 
 ## 提示词定制
 
@@ -113,13 +137,15 @@ API 会返回以下错误：
 项目附带了一个命令行客户端工具 `client.py`，使用方法如下：
 
 ```bash
-python client.py sample.pdf --output result.md
+python client.py --pdf_path sample.pdf --output result.md
 ```
 
 参数说明：
-- 位置参数 `pdf_path`: PDF 文件路径（必需）
-- `--url`: API 服务器 URL，默认为 `http://localhost:5000/ocr`
+- `--pdf_path` 或 `-p`: PDF 文件路径，默认为 `./test.pdf`
+- `--url`: API 服务器 URL，默认为 `http://localhost:50000/ocr`
 - `--output` 或 `-o`: 输出文件路径，默认为与 PDF 同名但后缀为 .md
+
+**注意**: 客户端不再负责清理Markdown代码块标记，此功能现已移至服务端，并可通过服务端的`CLEAN_CODE_BLOCKS`环境变量进行控制。客户端只负责接收服务端处理过的内容并保存文件，这样便简化了客户端逻辑。
 
 ## 错误与故障排除
 
