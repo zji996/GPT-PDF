@@ -40,7 +40,7 @@ GPT-PDF OCR API 是一个强大的工具，能够使用视觉模型对 PDF 文�
 使用 cURL:
 
 ```bash
-curl -X POST -F "file=@document.pdf" http://localhost:5000/ocr -o document.md
+curl -X POST -F "file=@document.pdf" http://localhost:50000/ocr -o document.md
 ```
 
 使用 Python requests:
@@ -49,7 +49,7 @@ curl -X POST -F "file=@document.pdf" http://localhost:5000/ocr -o document.md
 import requests
 
 pdf_path = "document.pdf"
-url = "http://localhost:5000/ocr"
+url = "http://localhost:50000/ocr"
 
 with open(pdf_path, 'rb') as f:
     files = {'file': (pdf_path, f, 'application/pdf')}
