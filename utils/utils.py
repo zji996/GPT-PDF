@@ -17,6 +17,7 @@ MAX_RETRIES = int(os.getenv('MAX_RETRIES', '3'))  # 最大重试次数
 RETRY_DELAY = float(os.getenv('RETRY_DELAY', '2.0'))  # 初始重试延迟（秒）
 RETRY_BACKOFF = float(os.getenv('RETRY_BACKOFF', '1.5'))  # 重试延迟的指数增长因子
 RETRY_JITTER = float(os.getenv('RETRY_JITTER', '0.1'))  # 随机抖动最大幅度（相对于延迟的比例）
+API_TIMEOUT = int(os.getenv('API_TIMEOUT', '600'))  # API请求超时时间（秒），默认600秒（10分钟）
 
 # 获取备用服务配置
 FALLBACK_ENDPOINTS = os.getenv('FALLBACK_ENDPOINTS', '').split(',')  # 备用服务端点列表
@@ -83,9 +84,16 @@ def send_to_openai(messages, current_retry=0, fallback_index=0):
     print(f"模型: {model_name}")
     print(f"消息数量: {len(messages)}")
     print(f"当前重试次数: {current_retry}/{MAX_RETRIES}, 备用服务索引: {fallback_index}/{len(FALLBACK_ENDPOINTS)}")
+    print(f"API超时设置: {API_TIMEOUT} 秒")
     
     try:
-        response = requests.post(endpoint, headers=headers, json=data, timeout=60)
+        # 根据endpoint动态确定超时时间
+        # 如果包含localhost或127.0.0.1等本地地址，使用更长的超时时间
+        timeout = API_TIMEOUT
+        if any(local_indicator in endpoint.lower() for local_indicator in ['localhost', '127.0.0.1', '.local']):
+            print(f"检测到本地推理服务器，使用更长的超时时间: {timeout}秒")
+        
+        response = requests.post(endpoint, headers=headers, json=data, timeout=timeout)
         
         if response.status_code != 200:
             print(f"API 错误状态码: {response.status_code}")
@@ -96,7 +104,7 @@ def send_to_openai(messages, current_retry=0, fallback_index=0):
             
         return response.json()
     except requests.Timeout:
-        print(f"API 请求超时")
+        print(f"API 请求超时（超过{timeout}秒）")
         return handle_request_failure(messages, current_retry, fallback_index)
     except requests.RequestException as e:
         print(f"API 请求异常: {str(e)}")
