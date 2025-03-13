@@ -68,7 +68,7 @@ def send_to_openai(messages, current_retry=0, fallback_index=0):
         'model': model_name,
         'messages': messages,
         'temperature': 0,  # 确保输出一致性
-        'max_tokens': 4096
+        'max_tokens': 4000
     }
     
     # 检查请求中是否包含图像，这需要特殊处理

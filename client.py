@@ -95,7 +95,7 @@ def convert_pdf_to_markdown(pdf_path, server_url="http://localhost:50000/ocr", o
 def main():
     # 命令行参数解析
     parser = argparse.ArgumentParser(description='将PDF文件转换为Markdown格式')
-    parser.add_argument('--pdf_path', '-p', default='./tmp/test.pdf', help='PDF文件的路径 (默认: ./test.pdf)')
+    parser.add_argument('--pdf_path', '-p', default='./test2.pdf', help='PDF文件的路径 (默认: ./test2.pdf)')
     parser.add_argument('--url', default='http://localhost:50000/ocr', help='OCR API的URL (默认: http://localhost:50000/ocr)')
     parser.add_argument('--output', '-o', help='输出文件的路径 (默认: 与PDF同名但后缀为.md)')
     
