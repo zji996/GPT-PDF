@@ -325,7 +325,14 @@ def ocr():
                     print("有部分页面处理成功，继续处理其余页面")
             
             # 将所有页面结果整合为 Markdown 内容
-            md_content = '\n\n'.join([result for result in all_results if result])
+            processed_results = []
+            for i, result in enumerate([r for r in all_results if r]):
+                page_num = i + 1
+                if i > 0:  # Don't add page break before the first page
+                    processed_results.append(f"\n\n<!-- PAGE BREAK -->\n\n## Page {page_num}\n\n---\n\n")
+                processed_results.append(result)
+            
+            md_content = ''.join(processed_results)
             
             if not md_content.strip():
                 return jsonify({'error': '处理完成，但未能提取有效内容'}), 500

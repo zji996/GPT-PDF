@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  gpt-pdf:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gpt-pdf
+    restart: unless-stopped
+    ports:
+      - "50000:50000"
+    volumes:
+      - ./logs:/app/logs
+      # 如果需要持久化上传的PDF文件，可以取消下面注释
+      - ./uploads:/app/uploads
+    env_file:
+      - .env
+    environment:
+      # 这些环境变量会覆盖.env文件中的设置
+      # 您可以在此处调整配置或在.env文件中设置
+      - CONCURRENCY=5
+      - MAX_CONCURRENCY=20
+      - USE_MULTIPROCESSING=true
+      - DPI=200
+      
+  # 如果需要使用Nginx作为反向代理，可以取消下面注释
+  # nginx:
+  #   image: nginx:latest
+  #   container_name: gpt-pdf-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf
+  #     - ./ssl:/etc/nginx/ssl
+  #   depends_on:
+  #     - gpt-pdf 
